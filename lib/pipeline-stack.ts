@@ -23,13 +23,20 @@ export class PipelineStack extends Stack {
             buildSpec: BuildSpec.fromObject({
                 version: '1.0',
                 phases: {
-                    install: {
+                    pre_build: {
                         commands: [
-                            'cd /lib/docker/orders-api/',
-                            'npm install'
+                            'cd lib/docker/orders-api/',
+                            '$(aws ecr get-login --no-include-email --region AWS_REGION )' // Login to ECR
                         ]
                     },
                     build: {
+                        commands: [
+                            'docker build -t my-image-name .',
+                            'docker tag my-image-name:latest my-ecr-repo-url:latest',
+                            'docker push my-ecr-repo-url:latest'
+                        ]
+                    },
+                    post_build: {
                         commands: 'cdk deploy'
                     }
                 }

@@ -88,6 +88,9 @@ export class OrdersStack extends Stack {
             desiredCount: 1,
         });
 
+        // Allow the ECS service to access the S3 bucket
+        ordersBucket.grantReadWrite(service.taskDefinition.taskRole);
+
         // Load Balancer Security Group
         const lbSecurityGroup = new SecurityGroup(this, 'LoadBalancerSecurityGroup', {
             vpc: vpc,
