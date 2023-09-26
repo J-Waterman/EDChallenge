@@ -86,6 +86,13 @@ export class PipelineStack extends Stack {
                         commands: [
                             'npm install -g aws-cdk',
                             'npm install -g typescript',
+                            'nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 &', // Start Docker daemon
+                            'timeout 15 sh -c "until docker info; do echo .; sleep 1; done"', // Wait for Docker daemon to start
+                        ]
+                    },
+                    pre_build: {
+                        commands: [
+                            'docker build -t orders-api ./lib/docker/orders-api/'
                         ]
                     },
                     build: {
@@ -98,7 +105,8 @@ export class PipelineStack extends Stack {
             }),
             role: codeBuildRole,
             environment: {
-                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
+                privileged: true
             },
         });
 
