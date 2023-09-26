@@ -15,7 +15,8 @@ export class PipelineStack extends Stack {
             resources: ['*'],
             actions: [
                 'cloudformation:*',
-                'ssm:*'
+                'ssm:*',
+                'ecr:*',
             ]
         }))
 
