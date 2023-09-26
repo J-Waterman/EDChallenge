@@ -1,11 +1,11 @@
 import express from 'express';
 import { S3 } from 'aws-sdk';
-import { Order } from '../../../models/Order';
+import { Order } from './models/Order';
 
 const app = express();
 const s3 = new S3();
 
-const PORT = parseInt(process.env.PORT) || 8080;
+const PORT = parseInt(process.env.PORT || '8080');
 const BUCKET_NAME = process.env.BUCKET_NAME || '';
 
 app.get('/orders', async (req, res) => {
@@ -39,6 +39,10 @@ app.get('/orders', async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Internal Server Error' });
     }
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).send('Healthy');
 });
 
 app.listen(PORT, () => {

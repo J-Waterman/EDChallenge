@@ -1,10 +1,12 @@
-import { Stack, App, StackProps, Duration } from '@aws-cdk/core';
-import { Vpc, SecurityGroup } from '@aws-cdk/aws-ec2'
+import { Stack, App, StackProps, Duration, CfnOutput } from '@aws-cdk/core';
+import { Vpc, SecurityGroup, Peer, Port } from '@aws-cdk/aws-ec2'
 import { Cluster, ContainerImage, FargateTaskDefinition, FargateService } from '@aws-cdk/aws-ecs';
 import { Bucket } from '@aws-cdk/aws-s3';
 import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment';
 import { LogGroup, MetricFilter, RetentionDays } from '@aws-cdk/aws-logs';
 import { Alarm, ComparisonOperator } from '@aws-cdk/aws-cloudwatch';
+import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
+import { ListenerAction } from '@aws-cdk/aws-elasticloadbalancingv2';
 
 export class OrdersStack extends Stack {
     constructor(scope: App, id: string, props?: StackProps) {
@@ -58,7 +60,45 @@ export class OrdersStack extends Stack {
             desiredCount: 1,
         });
 
-        // Logging
+        // Load Balancer Security Group
+        const lbSecurityGroup = new SecurityGroup(this, 'LoadBalancerSecurityGroup', {
+            vpc: vpc,
+            allowAllOutbound: true,
+            description: 'Allow all inbound HTTP traffic',
+        });
+
+        lbSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(80));
+
+        // Application Load Balancer
+        const loadBalancer = new ApplicationLoadBalancer(this, 'OrdersLoadBalancer', {
+            vpc: vpc,
+            internetFacing: true,
+            securityGroup: lbSecurityGroup,
+        });
+
+        // Add listener to the ALB
+        const listener = loadBalancer.addListener('Listener', {
+            port: 80,
+            defaultAction: ListenerAction.fixedResponse(404)
+        });
+
+        // Attach the ECS Fargate Service to the ALB
+        listener.addTargets('ECS', {
+            port: 80,
+            targets: [service.loadBalancerTarget({
+                containerName: 'OrdersContainer',
+                containerPort: 8080
+            })],
+            healthCheck: {
+                path: '/health',  // You might want to define a health check endpoint in your Express app
+                interval: Duration.seconds(30),
+            },
+        });
+
+        // Update the security group of the ECS service to allow traffic from the ALB
+        service.connections.allowFrom(loadBalancer, Port.tcp(8080));
+
+        // Logging and Alarms
         const logGroup = new LogGroup(this, 'OrdersApiLogGroup', {
             logGroupName: `/ecs/event-dynamic-challenge`,
             retention: RetentionDays.ONE_WEEK
@@ -82,5 +122,10 @@ export class OrdersStack extends Stack {
             comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD
         });
 
+        // Outputs
+        new CfnOutput(this, 'LoadBalancerDNS', {
+            value: loadBalancer.loadBalancerDnsName,
+            description: 'The DNS name of the load balancer',
+        });
     }
 }

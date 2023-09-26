@@ -7,24 +7,24 @@ export class PipelineStack extends Stack {
     constructor(scope: App, id: string, props?: StackProps) {
         super(scope, id, props);
 
-        // Define a repository (e.g., from GitHub)
+        // Define a Github repository as a source
         const sourceOutput = new Artifact();
         const sourceAction = new GitHubSourceAction({
             actionName: 'GitHub_Source',
-            owner: 'yourGitHubUsername',
-            repo: 'yourRepoName',
-            oauthToken: SecretValue.secretsManager('yourSecretName'),
+            owner: 'J-Waterman',
+            repo: 'EDChallenge',
+            oauthToken: SecretValue.secretsManager('githubOAuthToken', { jsonField: 'githubToken' }),
             output: sourceOutput
         });
 
         // Define a CodeBuild project
-        const project = new Project(this, 'MyProject', {
+        const project = new Project(this, 'EDChallengeProject', {
             buildSpec: BuildSpec.fromObject({
                 version: '0.2',
                 phases: {
                     install: {
                         commands: [
-                            'cd /docker/orders-api/',
+                            'cd /lib/docker/orders-api/',
                             'npm install'
                         ]
                     },
@@ -47,7 +47,7 @@ export class PipelineStack extends Stack {
         });
 
         // Create a pipeline
-        new Pipeline(this, 'MyPipeline', {
+        new Pipeline(this, 'EDChallengePipeline', {
             stages: [
                 {
                     stageName: 'Source',
