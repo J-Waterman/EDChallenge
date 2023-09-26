@@ -25,7 +25,7 @@ export class PipelineStack extends Stack {
                 phases: {
                     install: {
                         'runtime-versions': {
-                            'nodejs': 18
+                            'nodejs': 14
                         },
                         commands: [
                             'npm install -g aws-cdk',
@@ -35,7 +35,7 @@ export class PipelineStack extends Stack {
                     pre_build: {
                         commands: [
                             'npm install',
-                            'docker build -t orders-api ./lib/docker/orders-api/'  // Assuming Dockerfile is at this path
+                            'docker build -t orders-api ./lib/docker/orders-api/'
                         ]
                     },
                     build: {
