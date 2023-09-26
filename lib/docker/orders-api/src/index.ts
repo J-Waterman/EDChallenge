@@ -2,7 +2,7 @@ import express from 'express';
 import { S3 } from 'aws-sdk';
 import { Order } from './models/Order';
 
-const app = express();
+export const app = express();
 const s3 = new S3();
 
 const PORT = parseInt(process.env.PORT || '8080');
@@ -47,6 +47,8 @@ app.get('/health', (req, res) => {
     res.status(200).send('Healthy');
 });
 
-app.listen(PORT, () => {
-   console.log(`Orders API listening on port ${PORT}`)
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`Orders API listening on port ${PORT}`)
+    });
+}

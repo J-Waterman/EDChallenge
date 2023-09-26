@@ -25,7 +25,7 @@ export class PipelineStack extends Stack {
                 phases: {
                     install: {
                         'runtime-versions': {
-                            'nodejs': 14
+                            'nodejs': 18
                         },
                         commands: [
                             'npm install -g aws-cdk',
@@ -34,12 +34,18 @@ export class PipelineStack extends Stack {
                     },
                     pre_build: {
                         commands: [
-                            'npm install'
+                            'npm install',
+                            'docker build -t orders-api ./lib/docker/orders-api/'  // Assuming Dockerfile is at this path
                         ]
                     },
                     build: {
                         commands: [
-                            'npm install -g typescript',
+                            'cd orders-api',
+                            'npm run test'
+                        ]
+                    },
+                    post_build: {
+                        commands: [
                             'cdk deploy OrdersStack --require-approval never'
                         ]
                     }
@@ -47,6 +53,7 @@ export class PipelineStack extends Stack {
             }),
             environment: {
                 buildImage: LinuxBuildImage.STANDARD_5_0,
+                privileged: true
             },
         });
 
