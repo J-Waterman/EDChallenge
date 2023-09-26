@@ -2,10 +2,21 @@ import { Stack, StackProps, App, SecretValue } from '@aws-cdk/core';
 import { Pipeline, Artifact } from '@aws-cdk/aws-codepipeline';
 import { CodeBuildAction, GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
 import { Project, BuildSpec, LinuxBuildImage } from '@aws-cdk/aws-codebuild';
+import { Role, ServicePrincipal, PolicyStatement } from '@aws-cdk/aws-iam';
 
 export class PipelineStack extends Stack {
     constructor(scope: App, id: string, props?: StackProps) {
         super(scope, id, props);
+
+        const codeBuildRole = new Role(this, 'CodeBuildRole', {
+            assumedBy: new ServicePrincipal('codebuild.amazonaws.com')
+        })
+        codeBuildRole.addToPolicy(new PolicyStatement({
+            resources: ['*'],
+            actions: [
+                'cloudformation:*',
+            ]
+        }))
 
         // Define a Github repository as a source
         const sourceOutput = new Artifact();
@@ -25,7 +36,7 @@ export class PipelineStack extends Stack {
                 phases: {
                     install: {
                         'runtime-versions': {
-                            'nodejs': 14
+                            'nodejs': 18
                         },
                         commands: [
                             'npm install -g aws-cdk',
@@ -40,19 +51,14 @@ export class PipelineStack extends Stack {
                     },
                     build: {
                         commands: [
-                            'cd orders-api',
+                            'cd lib/docker/orders-api',
                             'npm run test'
-                        ]
-                    },
-                    post_build: {
-                        commands: [
-                            'cdk deploy OrdersStack --require-approval never'
                         ]
                     }
                 }
             }),
             environment: {
-                buildImage: LinuxBuildImage.STANDARD_5_0,
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_3,
                 privileged: true
             },
         });
@@ -63,6 +69,38 @@ export class PipelineStack extends Stack {
             project: project,
             input: sourceOutput,
             outputs: [buildOutput],
+        });
+
+        // Define a CodeBuild project for deployment
+        const deployProject = new Project(this, 'EDChallengeDeployProject', {
+            buildSpec: BuildSpec.fromObject({
+                version: '0.2',
+                phases: {
+                    install: {
+                        'runtime-versions': {
+                            'nodejs': 18
+                        },
+                        commands: [
+                            'npm install -g aws-cdk',
+                            'npm install -g typescript',
+                        ]
+                    },
+                    build: {
+                        commands: [
+                            'cdk deploy OrdersStack --require-approval never'
+                        ]
+                    }
+                }
+            }),
+            environment: {
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_3
+            },
+        });
+
+        const deployAction = new CodeBuildAction({
+            actionName: 'CDK_Deploy',
+            project: deployProject,
+            input: buildOutput
         });
 
         // Create a pipeline
@@ -76,6 +114,10 @@ export class PipelineStack extends Stack {
                     stageName: 'Build',
                     actions: [buildAction],
                 },
+                {
+                    stageName: 'Deploy',
+                    actions: [deployAction],
+                }
             ],
         });
     }
