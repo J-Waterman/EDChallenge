@@ -45,13 +45,13 @@ export class PipelineStack extends Stack {
                     },
                     pre_build: {
                         commands: [
-                            'npm install',
                             'docker build -t orders-api ./lib/docker/orders-api/'
                         ]
                     },
                     build: {
                         commands: [
                             'cd lib/docker/orders-api',
+                            'npm install',
                             'npm run test'
                         ]
                     }
