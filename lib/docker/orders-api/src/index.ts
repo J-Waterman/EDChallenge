@@ -13,22 +13,23 @@ app.get('/orders', async (req, res) => {
     console.log(`[${timestamp}] Request Received from IP: ${req.ip} for endpoint: ${req.path}`);
 
     try {
-        const { client, event_id } = req.query;
+        const { client_id, event_id } = req.query;
 
         const list = await s3.listObjectsV2({ Bucket: BUCKET_NAME }).promise();
 
         let orders: Order[] = [];
         for (const item of list.Contents || []) {
             const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: item.Key || '' }).promise();
-            const fileOrders: Order[] = JSON.parse(data.Body?.toString('utf-8') || '');
+            let newOrders: Order[] = JSON.parse(data.Body?.toString('utf-8') || '');
 
-            if (client) {
-                orders = orders.concat(fileOrders.filter(order => order.client_id === parseInt(client as string)));
-            } else if (event_id) {
-                orders = orders.concat(fileOrders.filter(order => order.event_id === parseInt(event_id as string)));
-            } else {
-                orders = orders.concat(fileOrders);
+            if (client_id) {
+                newOrders = newOrders.filter(order => order.client_id === parseInt(client_id as string));
             }
+            if (event_id) {
+                newOrders = newOrders.filter(order => order.event_id === parseInt(event_id as string));
+            }
+
+            orders = orders.concat(newOrders);
         }
 
         if (!orders.length) {
