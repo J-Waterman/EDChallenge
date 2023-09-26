@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@aws-cdk/core": "^1.204.0",
     "aws-cdk": "^2.97.1",
     "aws-cdk-lib": "^2.0.0",
     "aws-sdk": "^2.1464.0",

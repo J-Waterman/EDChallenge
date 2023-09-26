@@ -143,10 +143,10 @@ export class OrdersStack extends Stack {
             logGroup: logGroup,
             metricNamespace: 'OrdersApi',
             metricName: 'EmptyOrderResponses',
-            filterPattern: FilterPattern.anyTerm('Response sent with an empty list of orders')
+            filterPattern: FilterPattern.anyTerm('Response sent with an empty list of orders'),
         });
 
-        const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5) });
+        const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5), statistic: 'Sum' });
 
         new Alarm(this, 'EmptyOrdersAlarm', {
             metric: emptyOrdersMetricPeriod,
