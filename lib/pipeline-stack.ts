@@ -21,7 +21,7 @@ export class PipelineStack extends Stack {
         // Define a CodeBuild project
         const project = new Project(this, 'EDChallengeProject', {
             buildSpec: BuildSpec.fromObject({
-                version: '1.0',
+                version: '0.3',
                 phases: {
                     build: {
                         commands: 'cdk deploy'
