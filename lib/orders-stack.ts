@@ -20,7 +20,7 @@ export class OrdersStack extends Stack {
 
         // Deploy test data to the S3 Bucket
         new BucketDeployment(this, 'DeployTestData', {
-            sources: [Source.asset('./resources')], // path to your resources directory
+            sources: [Source.asset('./resources')],
             destinationBucket: ordersBucket
         });
 
