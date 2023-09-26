@@ -1,8 +1,8 @@
-import { Stack, StackProps, App, SecretValue } from '@aws-cdk/core';
-import { Pipeline, Artifact } from '@aws-cdk/aws-codepipeline';
-import { CodeBuildAction, GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
-import { Project, BuildSpec, LinuxBuildImage } from '@aws-cdk/aws-codebuild';
-import { Role, ServicePrincipal, PolicyStatement } from '@aws-cdk/aws-iam';
+import {App, SecretValue, Stack, StackProps} from "aws-cdk-lib";
+import {PolicyStatement, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
+import {Artifact, Pipeline} from "aws-cdk-lib/aws-codepipeline";
+import {CodeBuildAction, GitHubSourceAction} from "aws-cdk-lib/aws-codepipeline-actions";
+import {BuildSpec, LinuxBuildImage, Project} from "aws-cdk-lib/aws-codebuild";
 
 export class PipelineStack extends Stack {
     constructor(scope: App, id: string, props?: StackProps) {
@@ -58,7 +58,7 @@ export class PipelineStack extends Stack {
                 }
             }),
             environment: {
-                buildImage: LinuxBuildImage.AMAZON_LINUX_2_3,
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
                 privileged: true
             },
         });
@@ -93,7 +93,7 @@ export class PipelineStack extends Stack {
                 }
             }),
             environment: {
-                buildImage: LinuxBuildImage.AMAZON_LINUX_2_3
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5
             },
         });
 

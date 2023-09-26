@@ -1,12 +1,11 @@
-import { Stack, App, StackProps, Duration, CfnOutput } from '@aws-cdk/core';
-import { Vpc, SecurityGroup, Peer, Port } from '@aws-cdk/aws-ec2'
-import {Cluster, ContainerImage, FargateTaskDefinition, FargateService, LogDrivers} from '@aws-cdk/aws-ecs';
-import { Bucket } from '@aws-cdk/aws-s3';
-import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment';
-import { LogGroup, MetricFilter, RetentionDays } from '@aws-cdk/aws-logs';
-import { Alarm, ComparisonOperator } from '@aws-cdk/aws-cloudwatch';
-import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
-import { ListenerAction } from '@aws-cdk/aws-elasticloadbalancingv2';
+import {App, CfnOutput, Duration, Stack, StackProps} from "aws-cdk-lib";
+import {Peer, Port, SecurityGroup, Vpc} from "aws-cdk-lib/aws-ec2";
+import {Bucket} from "aws-cdk-lib/aws-s3";
+import {BucketDeployment, Source} from "aws-cdk-lib/aws-s3-deployment";
+import {ContainerImage, FargateService, FargateTaskDefinition, LogDrivers, Cluster} from "aws-cdk-lib/aws-ecs";
+import {LogGroup, MetricFilter, RetentionDays} from "aws-cdk-lib/aws-logs";
+import {ApplicationLoadBalancer, ListenerAction} from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import {Alarm, ComparisonOperator} from "aws-cdk-lib/aws-cloudwatch";
 
 export class OrdersStack extends Stack {
 
