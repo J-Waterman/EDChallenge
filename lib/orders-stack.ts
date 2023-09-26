@@ -1,6 +1,6 @@
 import { Stack, App, StackProps, Duration, CfnOutput } from '@aws-cdk/core';
 import { Vpc, SecurityGroup, Peer, Port } from '@aws-cdk/aws-ec2'
-import { Cluster, ContainerImage, FargateTaskDefinition, FargateService } from '@aws-cdk/aws-ecs';
+import {Cluster, ContainerImage, FargateTaskDefinition, FargateService, LogDrivers} from '@aws-cdk/aws-ecs';
 import { Bucket } from '@aws-cdk/aws-s3';
 import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment';
 import { LogGroup, MetricFilter, RetentionDays } from '@aws-cdk/aws-logs';
@@ -27,6 +27,30 @@ export class OrdersStack extends Stack {
         // ECS Cluster
         const cluster = new Cluster(this, 'OrdersCluster', { vpc: vpc });
 
+        // Logging and Alarms
+        const logGroup = new LogGroup(this, 'OrdersApiLogGroup', {
+            logGroupName: `/ecs/event-dynamic-challenge`,
+            retention: RetentionDays.ONE_WEEK
+        });
+
+        const emptyOrdersMetric = new MetricFilter(this, 'EmptyOrdersMetricFilter', {
+            logGroup,
+            metricNamespace: 'OrdersApi',
+            metricName: 'EmptyOrderResponses',
+            filterPattern: { logPatternString: 'Response sent with an empty list of orders' }
+        });
+
+        const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5) });
+
+        const emptyOrdersAlarm = new Alarm(this, 'EmptyOrdersAlarm', {
+            metric: emptyOrdersMetricPeriod,
+            threshold: 5,
+            evaluationPeriods: 1,
+            datapointsToAlarm: 1,
+            alarmDescription: 'Alarm when 5 or more responses with empty order lists are detected in a 5 minute period',
+            comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD
+        });
+
         // Task Definition
         const taskDefinition = new FargateTaskDefinition(this, 'OrdersTaskDefinition');
 
@@ -37,7 +61,11 @@ export class OrdersStack extends Stack {
             environment: {
                 BUCKET_NAME: ordersBucket.bucketName,
                 PORT: '8080'
-            }
+            },
+            logging: LogDrivers.awsLogs({
+                streamPrefix: 'API-Logs-',
+                logGroup: logGroup,
+            })
         });
 
         container.addPortMappings({
@@ -97,30 +125,6 @@ export class OrdersStack extends Stack {
 
         // Update the security group of the ECS service to allow traffic from the ALB
         service.connections.allowFrom(loadBalancer, Port.tcp(8080));
-
-        // Logging and Alarms
-        const logGroup = new LogGroup(this, 'OrdersApiLogGroup', {
-            logGroupName: `/ecs/event-dynamic-challenge`,
-            retention: RetentionDays.ONE_WEEK
-        });
-
-        const emptyOrdersMetric = new MetricFilter(this, 'EmptyOrdersMetricFilter', {
-            logGroup,
-            metricNamespace: 'OrdersApi',
-            metricName: 'EmptyOrderResponses',
-            filterPattern: { logPatternString: 'Response sent with an empty list of orders' }
-        });
-
-        const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5) });
-
-        const emptyOrdersAlarm = new Alarm(this, 'EmptyOrdersAlarm', {
-            metric: emptyOrdersMetricPeriod,
-            threshold: 5,
-            evaluationPeriods: 1,
-            datapointsToAlarm: 1,
-            alarmDescription: 'Alarm when 5 or more responses with empty order lists are detected in a 5 minute period',
-            comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD
-        });
 
         // Outputs
         new CfnOutput(this, 'LoadBalancerDNS', {
