@@ -14,13 +14,14 @@ export class PipelineStack extends Stack {
             owner: 'J-Waterman',
             repo: 'EDChallenge',
             oauthToken: SecretValue.secretsManager('githubOAuthToken', { jsonField: 'githubToken' }),
-            output: sourceOutput
+            output: sourceOutput,
+            branch: 'main',
         });
 
         // Define a CodeBuild project
         const project = new Project(this, 'EDChallengeProject', {
             buildSpec: BuildSpec.fromObject({
-                version: '0.2',
+                version: '1.0',
                 phases: {
                     install: {
                         commands: [
