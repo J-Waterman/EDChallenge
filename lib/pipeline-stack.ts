@@ -87,6 +87,7 @@ export class PipelineStack extends Stack {
                     },
                     build: {
                         commands: [
+                            'npm install',
                             'cdk deploy OrdersStack --require-approval never'
                         ]
                     }
