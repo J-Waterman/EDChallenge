@@ -9,51 +9,49 @@ import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { ListenerAction } from '@aws-cdk/aws-elasticloadbalancingv2';
 
 export class OrdersStack extends Stack {
+
     constructor(scope: App, id: string, props?: StackProps) {
         super(scope, id, props);
 
-        // VPC for the ECS cluster
-        const vpc = new Vpc(this, 'OrdersVpc');
+        const vpc = this.createVpc();
+        const ordersBucket = this.createOrdersBucket();
 
-        // S3 Bucket for the orders
+        const cluster = this.createEcsCluster(vpc);
+        const taskDefinition = this.createTaskDefinition(ordersBucket);
+
+        const logGroup = this.setupLogging();
+        const service = this.createEcsService(cluster, taskDefinition, vpc, logGroup, ordersBucket);
+        const loadBalancer = this.createLoadBalancer(vpc, service);
+
+        // Outputs
+        new CfnOutput(this, 'LoadBalancerDNS', {
+            value: loadBalancer.loadBalancerDnsName,
+            description: 'Load Balancer DNS Name',
+        });
+    }
+
+    createVpc() {
+        return new Vpc(this, 'OrdersVpc');
+    }
+
+    createOrdersBucket() {
         const ordersBucket = new Bucket(this, 'OrdersBucket');
-
-        // Deploy test data to the S3 Bucket
         new BucketDeployment(this, 'DeployTestData', {
             sources: [Source.asset('./resources')],
             destinationBucket: ordersBucket
         });
+        return ordersBucket;
+    }
 
-        // ECS Cluster
-        const cluster = new Cluster(this, 'OrdersCluster', { vpc: vpc });
+    createEcsCluster(vpc: Vpc) {
+        return new Cluster(this, 'OrdersCluster', { vpc: vpc });
+    }
 
-        // Logging and Alarms
-        const logGroup = new LogGroup(this, 'OrdersApiLogGroup', {
-            logGroupName: `/ecs/event-dynamic-challenge`,
-            retention: RetentionDays.ONE_WEEK
-        });
+    createTaskDefinition(ordersBucket: Bucket) {
+        return new FargateTaskDefinition(this, 'OrdersTaskDefinition');
+    }
 
-        const emptyOrdersMetric = new MetricFilter(this, 'EmptyOrdersMetricFilter', {
-            logGroup,
-            metricNamespace: 'OrdersApi',
-            metricName: 'EmptyOrderResponses',
-            filterPattern: { logPatternString: 'Response sent with an empty list of orders' }
-        });
-
-        const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5) });
-
-        const emptyOrdersAlarm = new Alarm(this, 'EmptyOrdersAlarm', {
-            metric: emptyOrdersMetricPeriod,
-            threshold: 5,
-            evaluationPeriods: 1,
-            datapointsToAlarm: 1,
-            alarmDescription: 'Alarm when 5 or more responses with empty order lists are detected in a 5 minute period',
-            comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD
-        });
-
-        // Task Definition
-        const taskDefinition = new FargateTaskDefinition(this, 'OrdersTaskDefinition');
-
+    createEcsService(cluster: Cluster, taskDefinition: FargateTaskDefinition, vpc: Vpc, logGroup: LogGroup, ordersBucket: Bucket) {
         const container = taskDefinition.addContainer('OrdersContainer', {
             image: ContainerImage.fromAsset('lib/docker/orders-api'),
             memoryLimitMiB: 512,
@@ -69,7 +67,7 @@ export class OrdersStack extends Stack {
         });
 
         container.addPortMappings({
-          containerPort: 8080,
+            containerPort: 8080,
         })
 
         // ECS Fargate Service
@@ -79,11 +77,11 @@ export class OrdersStack extends Stack {
             securityGroups: [
                 new SecurityGroup(this,
                     'OrdersSecurityGroup',
-                {
+                    {
                         vpc: vpc,
                         allowAllOutbound: true,
                         description: 'Allow all outbound traffic',
-                     })
+                    })
             ],
             desiredCount: 1,
         });
@@ -91,6 +89,10 @@ export class OrdersStack extends Stack {
         // Allow the ECS service to access the S3 bucket
         ordersBucket.grantReadWrite(service.taskDefinition.taskRole);
 
+        return service;
+    }
+
+    createLoadBalancer(vpc: Vpc, service: FargateService) {
         // Load Balancer Security Group
         const lbSecurityGroup = new SecurityGroup(this, 'LoadBalancerSecurityGroup', {
             vpc: vpc,
@@ -129,10 +131,33 @@ export class OrdersStack extends Stack {
         // Update the security group of the ECS service to allow traffic from the ALB
         service.connections.allowFrom(loadBalancer, Port.tcp(8080));
 
-        // Outputs
-        new CfnOutput(this, 'LoadBalancerDNS', {
-            value: loadBalancer.loadBalancerDnsName,
-            description: 'The DNS name of the load balancer',
+        return loadBalancer;
+    }
+
+    setupLogging() {
+        const logGroup = new LogGroup(this, 'OrdersApiLogGroup', {
+            logGroupName: `/ecs/event-dynamic-challenge`,
+            retention: RetentionDays.ONE_WEEK
         });
+
+        const emptyOrdersMetric = new MetricFilter(this, 'EmptyOrdersMetricFilter', {
+            logGroup,
+            metricNamespace: 'OrdersApi',
+            metricName: 'EmptyOrderResponses',
+            filterPattern: { logPatternString: 'Response sent with an empty list of orders' }
+        });
+
+        const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5) });
+
+        new Alarm(this, 'EmptyOrdersAlarm', {
+            metric: emptyOrdersMetricPeriod,
+            threshold: 5,
+            evaluationPeriods: 1,
+            datapointsToAlarm: 1,
+            alarmDescription: 'Alarm when 5 or more responses with empty order lists are detected in a 5 minute period',
+            comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD
+        });
+
+        return logGroup;
     }
 }
