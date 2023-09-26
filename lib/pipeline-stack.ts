@@ -33,10 +33,15 @@ export class PipelineStack extends Stack {
                         ]
                     },
                     pre_build: {
-                        commands: 'npm install'
+                        commands: [
+                            'npm install'
+                        ]
                     },
                     build: {
-                        commands: 'cdk deploy OrdersStack --require-approval never'
+                        commands: [
+                            'npm install -g typescript',
+                            'cdk deploy OrdersStack --require-approval never'
+                        ]
                     }
                 }
             }),
