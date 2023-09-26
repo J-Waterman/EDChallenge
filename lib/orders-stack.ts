@@ -3,7 +3,7 @@ import {Peer, Port, SecurityGroup, Vpc} from "aws-cdk-lib/aws-ec2";
 import {Bucket} from "aws-cdk-lib/aws-s3";
 import {BucketDeployment, Source} from "aws-cdk-lib/aws-s3-deployment";
 import {ContainerImage, FargateService, FargateTaskDefinition, LogDrivers, Cluster} from "aws-cdk-lib/aws-ecs";
-import {LogGroup, MetricFilter, RetentionDays} from "aws-cdk-lib/aws-logs";
+import {FilterPattern, LogGroup, MetricFilter, RetentionDays} from "aws-cdk-lib/aws-logs";
 import {ApplicationLoadBalancer, ListenerAction} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import {Alarm, ComparisonOperator} from "aws-cdk-lib/aws-cloudwatch";
 
@@ -140,10 +140,10 @@ export class OrdersStack extends Stack {
         });
 
         const emptyOrdersMetric = new MetricFilter(this, 'EmptyOrdersMetricFilter', {
-            logGroup,
+            logGroup: logGroup,
             metricNamespace: 'OrdersApi',
             metricName: 'EmptyOrderResponses',
-            filterPattern: { logPatternString: 'Response sent with an empty list of orders' }
+            filterPattern: FilterPattern.anyTerm('Response sent with an empty list of orders')
         });
 
         const emptyOrdersMetricPeriod = emptyOrdersMetric.metric().with({ period: Duration.minutes(5) });

@@ -100,7 +100,7 @@ export class PipelineStack extends Stack {
         const deployAction = new CodeBuildAction({
             actionName: 'CDK_Deploy',
             project: deployProject,
-            input: buildOutput
+            input: sourceOutput
         });
 
         // Create a pipeline
