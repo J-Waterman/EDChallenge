@@ -58,6 +58,7 @@ export class PipelineStack extends Stack {
                     }
                 }
             }),
+            role: codeBuildRole,
             environment: {
                 buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
                 privileged: true
@@ -94,6 +95,7 @@ export class PipelineStack extends Stack {
                     }
                 }
             }),
+            role: codeBuildRole,
             environment: {
                 buildImage: LinuxBuildImage.AMAZON_LINUX_2_5
             },
