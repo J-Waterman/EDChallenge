@@ -85,7 +85,8 @@ export class PipelineStack extends Stack {
                         },
                         commands: [
                             'npm ci',
-                            'npm install -g typescript'
+                            'npm install -g typescript',
+                            'npm install -g aws-cdk'
                         ]
                     },
                     build: {
