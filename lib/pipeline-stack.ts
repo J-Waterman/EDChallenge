@@ -90,7 +90,6 @@ export class PipelineStack extends Stack {
                     },
                     build: {
                         commands: [
-                            'npm run build',
                             'cdk synth'
                         ]
                     },
