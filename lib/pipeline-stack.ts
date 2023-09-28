@@ -17,7 +17,8 @@ export class PipelineStack extends Stack {
                 'cloudformation:*',
                 'ssm:*',
                 'ecr:*',
-                's3:*'
+                's3:*',
+                'iam:PassRole',
             ]
         }))
 
