@@ -17,6 +17,7 @@ export class PipelineStack extends Stack {
                 'cloudformation:*',
                 'ssm:*',
                 'ecr:*',
+                's3:*'
             ]
         }))
 
@@ -96,7 +97,7 @@ export class PipelineStack extends Stack {
                     },
                     post_build: {
                         commands: [
-                            'cdk deploy OrdersStack --require-approval never'
+                            'cdk deploy OrdersStack --require-approval never --verbose'
                         ]
                     }
                 }
