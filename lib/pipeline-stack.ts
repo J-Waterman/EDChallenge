@@ -19,6 +19,8 @@ export class PipelineStack extends Stack {
                 'ecr:*',
                 's3:*',
                 'iam:PassRole',
+                'ec2:*',
+                'sts:AssumeRole'
             ]
         }))
 
